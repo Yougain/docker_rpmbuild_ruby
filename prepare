@@ -1,0 +1,45 @@
+#!/bin/bash
+
+USERNAME=builder
+DNAME=docker_rpmbuild_ruby
+DDIR=/home/$USERNAME/git_project/$DNAME
+
+if ! grep -E '^dshared:' /etc/passwd;then
+	useradd -M -d /var/lib/dshared -s /bin/bash -u 9000 dshared
+fi
+
+if ! grep -E '^builder:' /etc/passwd > /dev/null;then
+	useradd -M -s /bin/bash -u `ls -ldn $DDIR | awk '{print $3}'` $USERNAME  -G dshared
+	if ! grep $USERNAME /etc/sudoers;then
+		echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+	fi
+	if [ ! -e /home/$USERNAME/.rpmmacros ];then
+		echo "%_topdir /home/$USERNAME/.rpmmacros/versions/.rpmbuild" > /home/$USERNAME/.rpmmacros
+	fi
+	chown $USERNAME:$USERNAME -R /home/builder
+	if [ ! -e /usr/bin/build ];then
+		ln -s $DDIR/build_ruby /usr/bin/build
+	fi
+fi
+sudo mkdir -p /var/lib/dshared/{files,rpmbuilds/ruby}
+sudo chown dshared:dshared /var/lib/dshared/{files,rpmbuilds,rpmbuilds/ruby}
+sudo chmod 775 /var/lib/dshared/{,files,rpmbuilds,rpmbuilds/ruby}
+
+usershell(){
+if ! grep "added for entry point" /root/$1 > /dev/null 2>/dev/null; then
+	echo '# added for entry point
+
+if [ "$PPID" = "0" -a "`pwd`" = "/home/builder" ];then
+        su builder
+        exit 0
+fi
+
+' > /root/$1.2
+	cat /root/$1.2 /root/$1 > /root/$1.3 2> /dev/null
+	mv -f /root/$1{.3,}
+	rm -f /root/$1.2
+fi
+}
+usershell .zshrc
+usershell .bashrc
+

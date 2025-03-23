@@ -1,0 +1,16 @@
+services:
+    rpmbuild-ruby:
+        build:
+          context: .
+        restart: always
+        volumes:
+            - /var/lib/dshared:/var/lib/dshared
+            - /var/lib/dshared/rpmbuilds/ruby:/home/builder/versions
+            - .:/home/builder/git_project/docker_rpmbuild_ruby
+        working_dir: /home/builder
+        entrypoint: ["/home/builder/git_project/docker_rpmbuild_ruby/startup.sh" ]
+        environment:
+            - TZ=Asia/Tokyo
+        hostname: rpmbuild_ruby--${HOSTNAME}
+        tty: true
+        stdin_open: true

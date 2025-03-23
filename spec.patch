@@ -1,0 +1,18 @@
+--- ruby.spec	2025-02-19 09:00:00.000000000 +0900
++++ ruby.spec	2025-03-19 23:36:11.121484335 +0900
+@@ -773,6 +773,7 @@
+ 
+ # Provide an example of usage of the tapset:
+ cp -a %{SOURCE3} .
++wget https://raw.githubusercontent.com/ruby/rdoc/refs/heads/master/lib/rubygems_plugin.rb  -O /tmp/rubygems_plugin.rb
+ 
+ %build
+ autoconf
+@@ -901,7 +902,7 @@
+ # https://github.com/rubygems/rubygems/pull/8340
+ # Make sure to not overwrite the file, because it should not exist.
+ test ! -e %{buildroot}%{gem_libdir rdoc}/%{basename:%{SOURCE20}}
+-mv %{SOURCE20} %{buildroot}%{gem_libdir rdoc}
++cp /tmp/%{basename:%{SOURCE20}} %{buildroot}%{gem_libdir rdoc}
+ echo "require_relative '../gems/rdoc-%{rdoc_version}/lib/rubygems_plugin.rb'" \
+   > %{buildroot}%{gem_plugin rdoc}

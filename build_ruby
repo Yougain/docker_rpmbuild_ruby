@@ -1,0 +1,41 @@
+#!/bin/bash
+
+SRC="`wget -q -O - https://ftp.yz.yamagata-u.ac.jp/pub/linux/fedora/linux/development/rawhide/Everything/source/tree/Packages/r | grep -Eo '>ruby-3.*src.rpm'`"
+SRC="${SRC:1}"
+VER=${SRC#ruby-}
+VER=${VER%.src.rpm}
+if [ -e ~/versions/$VER/.built ]; then
+	echo already built from $VER
+	exit 1
+fi
+sudo rm -rf ~/versions/$VER
+RBDIR=/home/builder/versions/.rpmbuild
+rm -f $RBDIR
+mkdir -p $RBDIR/SRPMS
+wget -O $RBDIR/SRPMS/$SRC https://ftp.yz.yamagata-u.ac.jp/pub/linux/fedora/linux/development/rawhide/Everything/source/tree/Packages/r/$SRC
+rpm -ivh $RBDIR/SRPMS/$SRC 
+sudo cp -a $RBDIR ~/versions/$VER
+rm -rf $RBDIR/SRPMS/$SRC
+(cd $RBDIR/SPECS;patch -p0 </home/builder/git_project/docker_rpmbuild_ruby/spec.patch)
+sudo rm -f /root/rpmbuild
+sudo ln -s $RBDIR /root/rpmbuild
+sudo dnf config-manager --set-enabled crb
+sudo dnf -y builddep ~/versions/.rpmbuild/SPECS/ruby.spec
+sudo dnf -y update
+sudo dnf -y upgrade
+rpmbuild -ba --nocheck --nodebuginfo $RBDIR/SPECS/ruby.spec
+
+NSRC="`cd  $RBDIR/SRPMS;ls *.src.rpm|head -1`"
+if [ -z "$NSRC" ];then
+	exit 1
+fi
+VER_FROM=$VER
+NVER=${NSRC#ruby-}
+NVER=${NVER%.src.rpm}
+sudo rm -rf ~/versions/$NVER
+sudo mv $RBDIR ~/versions/$NVER
+ln -s ../$VER_FROM  ~/versions/$NVER/built_from_$VER_FROM
+ln -s ./ /home/builder/versions/$VER_FROM/.built
+
+sudo ./squeeze /var/lib/dhared/rpmbuilds/ruby/$NVER
+
