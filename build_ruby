@@ -37,5 +37,5 @@ sudo mv $RBDIR ~/versions/$NVER
 ln -s ../$VER_FROM  ~/versions/$NVER/built_from_$VER_FROM
 ln -s ./ /home/builder/versions/$VER_FROM/.built
 
-sudo ./squeeze /var/lib/dhared/rpmbuilds/ruby/$NVER
-
+mkdir -p ~/versions/installers
+cp -af /home/builder/git_project/docker_rpmbuild_ruby/reinstall_ruby_rpms ~/versions/installers
