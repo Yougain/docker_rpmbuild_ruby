@@ -77,6 +77,6 @@ if ask_yes_no "Uninstall current ruby and install new ruby.";then
         rpm -ivh --nodeps ../rpms/${name2file[$i]}
     done
     gem list | awk '{print $1}' > ~/.default_ruby_gems.$VER
-    GEMS_TO_INST=(`grep -v -f ~/.reinstall_ruby_gems ~/.default_ruby_gems.$VER`)
+    GEMS_TO_INST=(`grep -v -f ~/.default_ruby_gems.$VER ~/.reinstall_ruby_gems`)
     gem install ${GEMS_TO_INST[@]}
 fi
