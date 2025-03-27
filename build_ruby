@@ -38,4 +38,5 @@ ln -s ../$VER_FROM  ~/versions/$NVER/built_from_$VER_FROM
 ln -s ./ /home/builder/versions/$VER_FROM/.built
 
 mkdir -p ~/versions/installers
-cp -af /home/builder/git_project/docker_rpmbuild_ruby/reinstall_ruby_rpms ~/versions/installers
+
+. /home/builder/git_project/docker_rpmbuild_ruby/create_installer

@@ -1,4 +1,4 @@
-#!/bin/bash
+# associated array, 'name2file' inserted here by create_installer
 
 function ask_yes_no {
 	local tty
@@ -28,51 +28,55 @@ function ask_yes_no {
 }
 
 
-[ "`id -ru`" != "0" ] && die "Please use sudo."
+if [ "`id -u`" != "0" ];then
+    echo "Please use sudo."
+    exit 1
+fi
 
-[ -z "$1" ] && die "No version argument given."
+VER=${0##*-}
+if [ -z "$VER" ]; then
+    echo "ERROR:No version argument given."
+    exit 1
+fi
 
-[ ! -d "/var/lib/dshared/rpmbuilds/ruby/$1" ] && die "Version '$1', not found."
+SCRIPT_PATH=$(readlink -f "$0")
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+REPOS_DIR=$(dirname "$SCRIPT_DIR")
 
-VER="$1"
 
-
-function _rpm(){
-    rpm -ivh --nodeps /var/lib/dshared/rpmbuilds/ruby/$VER/RPMS/$2/$1-$VER.$2.rpm
-}
-
-function x86_64(){
-    _rpm $1 x86_64
-}
-
-function noarch(){
-    _rpm $1 noarch
-}
-
+if (( $# > 0 )); then
+    for i in "$@"; do
+        if [ ! -e ../rpms/${name2file[$i]} ]; then
+            echo "ERROR: ../rpms/${name2file[$i]} not found."
+            err=1
+        fi
+    done
+    if [ -n "$err" ]; then
+        exit 1
+    fi
+    while (( $# > 0 )); do
+        if ! rpm -Uvh --nodeps ../rpms/${name2file[$i]}; then
+            err=$?
+        fi
+        shift
+    done
+    exit $err
+fi
 
 if ask_yes_no "Uninstall current ruby and install new ruby.";then
-    GEMS=(`gem list | awk '{print $1}'`)
+    GEMS=(`(gem list | awk '{print $1}';cat ~/.reinstall_ruby_gems 2>/dev/null)|sort|uniq`)
+    for i in "${GEMS[@]}"; do
+        echo $i >> ~/.reinstall_ruby_gems
+    done
     rpm -e `rpm -qa | grep ruby`
     rm -rf `find /usr -type d -name gems`
     for i in ruby-libs ruby ruby-devel rubygem-psych ruby-bundled-gems rubygem-io-console rubygem-json rubygem-racc rubygem-bigdecimal; do
-        x86_64 $i
+        rpm -ivh --nodeps ../rpms/${name2file[$i]}
     done
-    for i in rubygems ruby-default-gems rubygem-rdoc ruby-doc rubygem-irb rubygem-bundler; then
-        noarch $i
+    for i in rubygems ruby-default-gems rubygem-rdoc ruby-doc rubygem-irb rubygem-bundler; do
+        rpm -ivh --nodeps ../rpms/${name2file[$i]}
     done
-    NEW_DEF_GEMS=(`gem list | awk '{print $1}'`)
-    GEMS_TO_INST=()
-    for item in "${GEMS[@]}"; do
-        found=
-        for ni in "${NEW_DEF_GEMS[@]}"; do
-            if [ "$ni" = "$item" ]; then
-                found=1
-                break
-            fi
-        done
-        if [ -z "$found" ];then
-            GEMS_TO_INST+=("$item")
-        fi
-    done
-    gem install -y ${GEMS_TO_INST[@]}
+    gem list | awk '{print $1}' > ~/.default_ruby_gems.$VER
+    GEMS_TO_INST=(`grep -v -f ~/.reinstall_ruby_gems ~/.default_ruby_gems.$VER`)
+    gem install ${GEMS_TO_INST[@]}
 fi
