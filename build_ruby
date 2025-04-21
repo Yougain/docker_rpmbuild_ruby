@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 
 SRC="`wget -q -O - https://ftp.yz.yamagata-u.ac.jp/pub/linux/fedora/linux/development/rawhide/Everything/source/tree/Packages/r | grep -Eo '>ruby-3.*src.rpm'`"
 SRC="${SRC:1}"
